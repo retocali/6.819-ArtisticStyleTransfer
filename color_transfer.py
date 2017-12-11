@@ -14,17 +14,16 @@ def color_transfer_fast(source, target, colorspace="LAB"):
 
     # Read images and convert to color space
     if colorspace == "RGB":
-        s = cv2.imread(source).astype("float32")
-        t = cv2.imread(target).astype("float32")
+        pass
     elif colorspace == "LAB":
-        s = cv2.cvtColor(cv2.imread(source),
+        s = cv2.cvtColor(source,
                          cv2.COLOR_BGR2LAB).astype("float32")
-        t = cv2.cvtColor(cv2.imread(target),
+        t = cv2.cvtColor(target,
                          cv2.COLOR_BGR2LAB).astype("float32")
     elif colorspace == "YCrCb":
-        s = cv2.cvtColor(cv2.imread(source),
+        s = cv2.cvtColor(source,
                          cv2.COLOR_BGR2YCrCb).astype("float32")
-        t = cv2.cvtColor(cv2.imread(target),
+        t = cv2.cvtColor(target,
                          cv2.COLOR_BGR2YCrCb).astype("float32")
     else:
         raise NameError
@@ -129,11 +128,12 @@ if __name__ == "__main__":
         print("ERROR: Not enough arguments")
     elif len(argv) == 3:
         try:
-            s = str(argv[1])
-            t = str(argv[2])
+            print("This implementation performs poorly. Add --fast for a better one")
+            s = cv2.imread(str(argv[1]))
+            t = cv2.imread(str(argv[2]))
             im = color_transfer(s, t)
 
-            whole = np.hstack((cv2.imread(s), cv2.imread(t), im))
+            whole = np.hstack([s, t, im])
             cv2.namedWindow("results", cv2.WINDOW_NORMAL)
             cv2.imshow('results', whole)
             cv2.waitKey(0)
@@ -146,12 +146,12 @@ if __name__ == "__main__":
             if str(argv[1]) != "--fast":
                 raise NameError
 
-            s = str(argv[2])
-            t = str(argv[3])
+            s = cv2.imread(str(argv[2]))
+            t = cv2.imread(str(argv[3]))
             colorspace = str(argv[4])
             im = color_transfer_fast(s, t, colorspace)
 
-            whole = np.hstack((cv2.imread(s), cv2.imread(t), im))
+            whole = np.hstack([s, t, im])
             cv2.namedWindow("results", cv2.WINDOW_NORMAL)
             cv2.imshow('results', whole)
             cv2.waitKey(0)
@@ -164,16 +164,15 @@ if __name__ == "__main__":
             if str(argv[1]) != "--fast":
                 raise NameError
 
-            s = str(argv[2])
-            t = str(argv[3])
+            s = cv2.imread(str(argv[2]))
+            t = cv2.imread(str(argv[3]))
             im = color_transfer_fast(s, t)
 
-            whole = np.hstack((cv2.imread(s), cv2.imread(t), im))
+            whole = np.hstack([s, t, im])
             cv2.namedWindow("results", cv2.WINDOW_NORMAL)
             cv2.imshow('results', whole)
             cv2.waitKey(0)
             cv2.destroyAllWindows()
-
         except:
             print("ERROR: not valid arguments")
     else:
