@@ -1,3 +1,0 @@
-[submodule "trainingCode/pytorch"]
-	path = trainingCode/pytorch
-	url = https://github.com/hangzhaomit/semantic-segmentation-pytorch.git
