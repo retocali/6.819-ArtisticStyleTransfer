@@ -6,8 +6,12 @@ import time
 
 overlap = 2
 thickness = 3
+<<<<<<< Updated upstream
 threshold = 200
 adaptive = True
+=======
+threshold = 1000000
+>>>>>>> Stashed changes
 
 def patch_matching(source, target, patches=(12, 16), quilting=True):
     """ Takes in two filenames as image files
@@ -114,8 +118,8 @@ def quad_tree(input_img, style_img, omega=10, max_patch_size=100, min_patch_size
             print('t = {}'.format(time.time()-t0))
         counter+=1
         ti = p_t.shape[0]
-        p_s = min(patch_s[ti], key=lambda x: (np.sum(np.subtract(x, p_t))**2)/(ti**2))
-        d = np.sum(np.subtract(p_s, p_t)**2)/(ti**2)
+        p_s = min(patch_s[ti], key=lambda x: (np.linalg.norm(np.subtract(x, p_t))**2)/(ti**2))
+        d = (np.linalg.norm(np.subtract(p_s, p_t))**2)/(ti**2)
         eta = np.std(p_t)# + d
         print('std: ', np.std(p_t))
         print('d: ', d)
@@ -154,8 +158,8 @@ def split(patch, style_patches, omega, min_patch_size):
     ti = patch_size//2
     print('ti splitted: ', ti)
     for sub_patch in split_patch:
-        matching_patch = min(style_patches[ti], key=lambda x: (np.sum(np.subtract(x, sub_patch)**2))/(ti**2))
-        d = np.sum(np.subtract(matching_patch, sub_patch)**2)/(ti**2)
+        matching_patch = min(style_patches[ti], key=lambda x: (np.linalg.norm(np.subtract(x, sub_patch))**2)/(ti**2))
+        d = (np.linalg.norm(np.subtract(matching_patch, sub_patch))**2)/(ti**2)
         eta = np.std(sub_patch)# + d
 
         # Split under this condition
@@ -241,16 +245,16 @@ if __name__ == "__main__":
         # try:
         s = str(argv[1])
         t = str(argv[2])
+
         im = quad_tree(s, t, omega=15, max_patch_size = 32, min_patch_size = 8)
         print(im.shape)
         im = cv2.resize(im, (500, 400))
-        whole = np.hstack((cv2.imread(s) / 255, cv2.imread(t) / 255, im / 255))
+        whole = np.hstack((im / 255))
         cv2.namedWindow("results", cv2.WINDOW_NORMAL)
         cv2.imshow('results', whole)
         while cv2.waitKey(0) != q:
             pass
         cv2.destroyAllWindows()
-
 
         # except:
         #   print("ERROR: not valid arguments")
