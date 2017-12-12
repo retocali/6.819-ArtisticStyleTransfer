@@ -7,23 +7,25 @@ from color_transfer import color_transfer_fast
 
 def style_transfer(source, target, kernel=(11, 11), weight=0.5):
     # Color transfer the image
+    shape = target.shape[:2]
     t_c = color_transfer_fast(source, target)
     print("Color transfered")
 
     # Produce the hallucination from the blur image]
-    hallucination = patch_matching(source, t, (40, 50))
+    hallucination = cv2.resize(patch_matching(source, t, (40, 50)), shape[::-1], 0)
     print("Hallucination completed:", hallucination.shape)
     final = color_transfer_fast(target, hallucination)
     # Compute a Weighted Average
     return weighted_average(t_c, hallucination, weight), weighted_average(target, final, weight)
 
-def style_transfer_quad(source, target, kernel=(11, 11), weight=0.5):
+def style_transfer_quad(source, target, kernel=(11, 11), weight=0.75):
     # Color transfer the image
+    shape = target.shape[:2]
     t_c = color_transfer_fast(source, target)
     print("Color transfered")
 
     # Produce the hallucination from the blur image]
-    hallucination = quad_tree(source, t, omega=5)
+    hallucination = cv2.resize(quad_tree(source.astype("float32"), t.astype("float32"), omega=5) ,shape[::-1], 0)
     print("Hallucination completed:", hallucination.shape)
     final = color_transfer_fast(target, hallucination)
     # Compute a Weighted Average
@@ -47,7 +49,8 @@ if __name__ == "__main__":
             (s / 255, t / 255, im / 255, im2 / 255))
         cv2.namedWindow("results", cv2.WINDOW_NORMAL)
         cv2.imshow('results', whole)
-        cv2.waitKey(0)
+        while cv2.waitKey(33) != ord('k'):
+            pass
         cv2.destroyAllWindows()
         # except:
         #     print("ERROR: not valid arguments")
@@ -61,7 +64,8 @@ if __name__ == "__main__":
             (s / 255, t / 255, im / 255, im2 / 255))
         cv2.namedWindow("results", cv2.WINDOW_NORMAL)
         cv2.imshow('results', whole)
-        cv2.waitKey(0)
+        while cv2.waitKey(33) != ord('k'):
+            pass
         cv2.destroyAllWindows()
         # except:
         #     print("ERROR: not valid arguments")

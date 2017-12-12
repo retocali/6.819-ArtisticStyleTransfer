@@ -255,7 +255,7 @@ if __name__ == "__main__":
         whole = np.hstack([im / 255])
         cv2.namedWindow("results", cv2.WINDOW_NORMAL)
         cv2.imshow('results', im/255)
-        while cv2.waitKey(0) != 'q':
+        while cv2.waitKey(33) != ord('k'):
             pass
         cv2.destroyAllWindows()
 
@@ -276,7 +276,7 @@ if __name__ == "__main__":
         whole = np.hstack([im / 255])
         cv2.namedWindow("results", cv2.WINDOW_NORMAL)
         cv2.imshow('results', whole)    
-        while cv2.waitKey(0) != 'q':
+        while cv2.waitKey(33) != ord('k'):
             pass
         cv2.destroyAllWindows()
 
