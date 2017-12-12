@@ -92,10 +92,10 @@ def create_sub_patches(img, max_patch_size, min_patch_size):
         patchworks[patch_size] = rotate_items(patchworks[patch_size])
     return patchworks
 
-def quad_tree(input_img, style_img, omega=10, max_patch_size=100, min_patch_size = 25):
+def quad_tree(input_img, style_img, omega=10, max_patch_size=32, min_patch_size = 8):
     # Read images and convert to color space
-    s = cv2.imread(style_img).astype("float32")
-    t = cv2.imread(input_img).astype("float32")
+    s = input_img
+    t = style_img
 
     s = cv2.resize(s, (512, 512))
     t = cv2.resize(t, (512, 512))
