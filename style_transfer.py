@@ -18,7 +18,7 @@ def style_transfer(source, target, kernel=(11, 11), weight=0.5):
     # Compute a Weighted Average
     return weighted_average(t_c, hallucination, weight), weighted_average(target, final, weight)
 
-def style_transfer_quad(source, target, kernel=(11, 11), weight=0.75):
+def style_transfer_quad(source, target, kernel=(11, 11), weight=0.25):
     # Color transfer the image
     shape = target.shape[:2]
     t_c = color_transfer_fast(source, target)
