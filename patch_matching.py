@@ -5,13 +5,14 @@ from sklearn.feature_extraction import image
 import time
 
 
-def patch_matching(source, target, patches=(12, 16), sigma=1. / 4):
+overlap = 2
+thickness = 3
+threshold = 1_000_000
+
+def patch_matching(source, target, patches=(12, 16), sigma=1. / 4, quilting=True):
     """ Takes in two filenames as image files
     where the colors from target are moved onto
     source and returns a numpy array as the result"""
-
-    # add noise to target
-    target = target + np.random.normal(0, sigma, np.shape(target))
 
     # Split the images into patches
     l, w, c = source.shape
@@ -19,29 +20,37 @@ def patch_matching(source, target, patches=(12, 16), sigma=1. / 4):
     w /= patches[1]
 
     # Find patches of random locations
-    patch_s = image.extract_patches_2d(source, (int(l), int(w)), 2000)
+    patch_s = flatten([np.vsplit(row, patches[0])
+                       for row in np.hsplit(source, patches[1])])
+
     patch_s = rotate_items(patch_s)
     patch_t = flatten([np.vsplit(row, patches[0])
                        for row in np.hsplit(target, patches[1])])
 
     matches = []
+
+    patch_size = patch_t[0].shape
+    print("Patch size:", patch_size)
     for p_t in patch_t:
         # Find the closest patch
-        p_s = min(patch_s, key=lambda x: np.sum(np.subtract(x, p_t)**2))
-        
-        # Add the closest patch                   
+        p_s = min(patch_s, key=lambda x: np.sum((cv2.resize(x, patch_size[:2]) - p_t)**2))
+        # Add the closest patch
         matches.append(p_s)
-
-    patch_size = p_s.shape
-
     # Concatenate the patches into a image
     print("Concatenating Image")
     cols = []
-    for x in range(patches[1]):
-        col = np.vstack(matches[patches[0] * x:patches[0] * (x + 1)])
-        cols.append(col)
-    matches = np.hstack(cols)
-
+    if quilting:
+        for x in range(patches[1]):
+            col = vstack(matches[patches[0] * x:patches[0] * (x + 1)])
+            cols.append(col)
+        matches = np.fliplr((hstack(cols), 3))
+    else:
+        matches = [cv2.resize(x, patch_size[:2]) for x in matches]
+        for x in range(patches[1]):
+            col = np.vstack(matches[patches[0] * x:patches[0] * (x + 1)])
+            cols.append(col)
+        matches = np.hstack(cols)     
+        matches = np.fliplr((hstack(cols), 3))
     # Clip the color values in the channels
     c1, c2, c3 = cv2.split(matches)
     c1 = np.clip(c1, 0, 255)
@@ -49,7 +58,9 @@ def patch_matching(source, target, patches=(12, 16), sigma=1. / 4):
     c3 = np.clip(c3, 0, 255)
 
     # Add gaussian blur
-    return cv2.merge([c1, c2, c3]).astype("uint8")
+    final = cv2.merge([c1, c2, c3]).astype("uint8")
+    print("Final:", final.shape)
+    return final
 
 def create_sub_patches(img, max_patch_size, min_patch_size):
     height = img.shape[0]
@@ -64,10 +75,8 @@ def create_sub_patches(img, max_patch_size, min_patch_size):
     
     patchworks = dict()
     for patch_size in patch_sizes:
-        patchworks[patch_size] = list()
-        for j in range(0, width, patch_size):
-            for i in range(0, height, patch_size):
-                patchworks[patch_size].append(img[i:i+patch_size, j:j+patch_size])
+        patchworks[patch_size] = image.extract_patches_2d(img, (patch_size, patch_size), 2000)
+        patchworks[patch_size] = rotate_items(patchworks[patch_size])
     return patchworks
 
 def quad_tree(input_img, style_img, omega=10, max_patch_size=100, min_patch_size = 25):
@@ -167,6 +176,52 @@ def rotate_items(array):
     return rotated_items
 
 
+def hstack(images):
+    height = sum(image.shape[0] for image in images)
+    real_height = sum(image.shape[0]-overlap for image in images)
+    width = max(image.shape[1] for image in images)
+    output = np.zeros((height, width, 3))
+
+    y = 0
+    old_image = None
+    for image in images:
+        h, w, d = image.shape
+        output[y: y + h, :w] = image
+        if (y != 0):
+            r = overlap
+            t = thickness
+            print(np.sum((image[:r, :w] - old_image[h-r:h, :w])**2))
+            if (np.sum((image[:r, :w] - old_image[h-r:h, :w])**2) < threshold):
+                for i in range(0, w, 2*thickness):
+                    output[y-r:y, i:i+t] = image[:r, i:i+t] 
+        old_image = image
+        y += h
+    return output[:real_height,:w]
+
+
+def vstack(images):
+    height = max(image.shape[0] for image in images)
+    real_width = sum(image.shape[1]-overlap for image in images)
+    width = sum(image.shape[1] for image in images)
+    output = np.zeros((height, width, 3))
+
+    x = 0
+    old_image = None
+    for image in images:
+        h, w, d = image.shape
+        output[:h, x: x + w] = image
+        if (x != 0):
+            r = overlap
+            t = thickness
+            print(np.sum((image[:h, :r] - old_image[:h, w-r:w])**2))
+            if (np.sum((image[:h, :r] - old_image[:h, w-r:w])**2) < threshold):
+                for i in range(0, w, 2*thickness):        
+                    output[i:i+t,x-r:x] = image[i:i+t, :r] 
+        old_image = image
+        x += h
+    return output[:h, :real_width]
+
+
 def flatten(array):
     return [item for sublist in array for item in sublist]
 
@@ -180,7 +235,7 @@ if __name__ == "__main__":
         t = str(argv[2])
         #im = patch_matching(s, t)
         
-        im = quad_tree(s, t, max_patch_size = 64, min_patch_size = 8)
+        im = quad_tree(s, t, omega=15, max_patch_size = 32, min_patch_size = 8)
         print(im.shape)
         im = cv2.resize(im, (500, 400))
         whole = np.hstack((cv2.imread(s) / 255, cv2.imread(t) / 255, im / 255))
@@ -205,9 +260,9 @@ if __name__ == "__main__":
     else:
         print("ERROR: Too many arguments")
 
-    # whole = np.hstack([s / 255, t / 255, im / 255])
+    whole = np.hstack([im / 255])
     cv2.namedWindow("results", cv2.WINDOW_NORMAL)
-    cv2.imshow('results', im / 255)
+    cv2.imshow('results', whole)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
 """
