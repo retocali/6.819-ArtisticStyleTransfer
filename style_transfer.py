@@ -25,7 +25,7 @@ def style_transfer_quad(source, target, kernel=(11, 11), weight=0.25):
     print("Color transfered")
 
     # Produce the hallucination from the blur image]
-    hallucination = cv2.resize(quad_tree(source.astype("float32"), t.astype("float32"), omega=5) ,shape[::-1], 0)
+    hallucination = cv2.resize(quad_tree(source.astype("float32"), t.astype("float32"), omega=15, max_patch_size = 32,  min_patch_size = 8) ,shape[::-1], 0)
     print("Hallucination completed:", hallucination.shape)
     final = color_transfer_fast(target, hallucination)
     # Compute a Weighted Average
